@@ -5,11 +5,9 @@ from selenium.webdriver.common.by import By
 import time
 import sqlite3
 
-# Step 1: Create and connect to SQLite database
 conn = sqlite3.connect('student_discounts.db')
 cursor = conn.cursor()
 
-# Create a table for storing discounts
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS discounts (
     id INTEGER PRIMARY KEY,
@@ -21,7 +19,6 @@ CREATE TABLE IF NOT EXISTS discounts (
 )
 ''')
 
-# Function to scrape discounts from MyUNIDAYS
 def scrape_myunidays():
     url = "https://www.myunidays.com/IN/en-IN/list/all/AtoZ"
     response = requests.get(url)
@@ -41,9 +38,8 @@ def scrape_myunidays():
                 cursor.execute('''
                 INSERT INTO discounts (source, company, link, discount, expiry) 
                 VALUES (?, ?, ?, ?, ?)''',
-                ('MyUNIDAYS', company_name, full_link, discount, 'N/A'))  # No expiry info from this source
+                ('MyUNIDAYS', company_name, full_link, discount, 'N/A'))
 
-# Step 2: Scrape discounts from Student Beans
 def scrape_student_beans():
     driver = webdriver.Chrome()
     driver.get("https://www.studentbeans.com/student-discount/us/all")
@@ -70,22 +66,20 @@ def scrape_student_beans():
                 expiry = section.find_element(By.XPATH, ".//span[@data-testid='offerBoostExpiry']").text.strip()
             except:
                 expiry = "No expiration date available"
-            link = section.find_element(By.XPATH, ".//a").get_attribute("href")  # Extract link
+            link = section.find_element(By.XPATH, ".//a").get_attribute("href")
 
             cursor.execute('''
             INSERT INTO discounts (source, company, link, discount, expiry) 
             VALUES (?, ?, ?, ?, ?)''',
-            ('Student Beans', brand, link, discount_title, expiry))  # No logo info from this source
+            ('Student Beans', brand, link, discount_title, expiry))
         except Exception as e:
             print(f"Error extracting information: {e}")
 
     driver.quit()
 
-# Run the scraping functions
 scrape_myunidays()
 scrape_student_beans()
 
-# Commit changes and close the database connection
 conn.commit()
 conn.close()
 
